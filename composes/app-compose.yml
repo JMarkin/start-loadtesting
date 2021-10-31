@@ -1,0 +1,40 @@
+version: "2.2"
+
+services:
+  nginx:
+    build:
+      context: ../nginx
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ../nginx/upstream.conf:/etc/nginx/upstream.conf
+      - ../nginx/app.conf:/etc/nginx/app.conf
+    ports:
+      - 8080:80
+    user: nginx
+    depends_on:
+      - "app"
+
+
+  app:
+    build:
+      context: ../app_example
+    environment:
+      DB_DSN: postgresql://postgres:example@postgres/postgres
+      REDIS_DSN: redis://redis
+      APM_URL: http://apm-server:8200
+    depends_on:
+      - "postgres"
+      - "redis"
+    cpu_count: 1
+    mem_limit: 512m
+    cpus: 1
+
+  postgres:
+    image: postgres:alpine
+    command: postgres -c shared_preload_libraries=pg_stat_statements -c pg_stat_statements.track=all -c max_connections=200
+    environment:
+      POSTGRES_PASSWORD: example
+
+  redis:
+    image: redis:alpine
+
